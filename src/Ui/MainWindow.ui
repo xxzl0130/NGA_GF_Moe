@@ -6,12 +6,12 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>800</width>
+    <width>986</width>
     <height>600</height>
    </rect>
   </property>
   <property name="windowTitle">
-   <string>MainWindow</string>
+   <string>NGA萌战计票工具</string>
   </property>
   <widget class="QWidget" name="centralwidget">
    <layout class="QGridLayout" name="gridLayout">
@@ -121,12 +121,12 @@
       <item>
        <widget class="QLabel" name="label">
         <property name="text">
-         <string>帖子FID</string>
+         <string>帖子TID</string>
         </property>
        </widget>
       </item>
       <item>
-       <widget class="QLineEdit" name="fidLineEdit"/>
+       <widget class="QLineEdit" name="tidLineEdit"/>
       </item>
       <item>
        <widget class="QLabel" name="label_2">
@@ -154,6 +154,16 @@
       </item>
       <item>
        <widget class="QLineEdit" name="scheduleLineEdit"/>
+      </item>
+      <item>
+       <widget class="QLabel" name="label_6">
+        <property name="text">
+         <string>真爱倍率</string>
+        </property>
+       </widget>
+      </item>
+      <item>
+       <widget class="QLineEdit" name="trueloveLineEdit"/>
       </item>
       <item>
        <widget class="QPushButton" name="loadSettingPushButton">

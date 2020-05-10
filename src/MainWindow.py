@@ -1,13 +1,22 @@
 # -*- coding: utf-8 -*-
 from src.Ui.Ui_MainWindow import Ui_MainWindow
+from src.NGA_Spider import *
+from src.CheckDialog import *
 from PyQt5.QtWidgets import *
-from PyQt5.QtGui import *
-from PyQt5.QtCore import *
 import json
+from bs4 import BeautifulSoup
+import re
 
 
 class MainWindow(QMainWindow):
     guns = dict()
+    name2guns = dict()
+    tid = 17315247
+    pages = 1
+    schedule = "1"
+    truelove_info = dict()
+    vote = dict()
+    truelove_vote = dict()
 
     def __init__(self):
         QMainWindow.__init__(self)
@@ -26,16 +35,83 @@ class MainWindow(QMainWindow):
         self.ui.gunListWidget.currentTextChanged.connect(self.select_gun)
 
     def start(self):
-        # TODO
-        return
+        self.tid = int(self.ui.tidLineEdit.text())
+        self.pages = int(self.ui.pagesLineEdit.text())
+        self.schedule = self.ui.scheduleLineEdit.text()
+        self.make_name2guns()
+        self.truelove_info.clear()
+        for p in range(1, self.pages + 1):
+            self.process_page("https://bbs.nga.cn/read.php?tid=%d&page=%d" % (self.tid, p))
+
+    # 处理一页的信息
+    def process_page(self, url):
+        html_str = down_web(url)
+        if html_str is None:
+            return
+        soup = BeautifulSoup(html_str, 'lxml')
+        tables = soup.find_all('table')
+        for table in tables:
+            cls = table.get('class')
+            if cls[0] == 'forumbox':
+                tds = table.find_all('td')
+                script = tds[1].find('script')
+                if script:
+                    self.process_main_floor(script)
+                else:
+                    self.process_comment(tds)
+
+    # 处理主楼的投票数据
+    def process_main_floor(self, script):
+        t = script.split(',', 2)
+        t = t[2].split('\'')
+        data = t[1].split('~')
+        id_list = dict()
+        for i in range(0, len(data), 2):
+            if data[i].isnumeric():
+                # 登记数字编号与文本的对应
+                id_list[data[i]] = data[i + 1]
+            elif data[i].find('max_select') >= 0:
+                # 跳过max_select语句
+                i += 2
+            else:
+                # 处理投票数量
+                vote = data[i + 1].split(',')[0]
+                self.vote[self.name2guns[id_list[data[i][1:]]]] = int(vote)
+
+    # 处理回复的真爱数据
+    def process_comment(self, tds):
+        found = set()
+        truelove = ''
+        spans = tds[1].find_all('span')
+        if len(spans) < 2:
+            return
+        sp = spans[1].span
+        if sp:
+            cmt = sp.get_text()
+            pattern = re.compile(r'uid=([\d]+)')
+            uid = pattern.findall(tds[0].find('span').find('a').get('href'))[0]
+            for name in self.name2guns:
+                if str.find(cmt, name) >= 0:
+                    found.add(self.name2guns[name])
+                    truelove = self.name2guns[name]
+            if len(found) != 1:
+                # 弹窗选择
+                truelove = CheckDialog.pop(self, cmt)
+            if (uid in self.truelove_info) and (self.truelove_info[uid] != truelove):
+                # 清空该uid所有的信息，并且空串以后也一直会进入该分支
+                self.truelove_info = ''
+                truelove = ''
+            if truelove in self.name2guns:
+                self.truelove_vote[truelove] += 1
 
     def load_setting(self):
         filename, _ = QFileDialog.getOpenFileName(self, filter="JSON(*.json)")
         with open(filename, 'r', encoding='gbk') as fin:
             settings = json.load(fin, encoding='gbk')
-            self.ui.fidLineEdit.setText(settings['fid'])
+            self.ui.tidLineEdit.setText(settings['tid'])
             self.ui.pagesLineEdit.setText(settings['pages'])
             self.ui.scheduleLineEdit.setText(settings['schedule'])
+            self.ui.trueloveLineEdit.setText(settings['truelove'])
             guns = settings["guns"]
             for gun in guns:
                 self.ui.gunLineEdit.setText(gun)
@@ -48,10 +124,11 @@ class MainWindow(QMainWindow):
 
     def save_setting(self):
         settings = {
-            'fid': self.ui.fidLineEdit.text(),
+            'tid': self.ui.tidLineEdit.text(),
             'pages': self.ui.pagesLineEdit.text(),
             'schedule': self.ui.scheduleLineEdit.text(),
-            'guns': self.guns
+            'guns': self.guns,
+            'truelove': self.ui.trueloveLineEdit.text()
         }
         data = json.dumps(settings, ensure_ascii=False)
         filename, _ = QFileDialog.getSaveFileName(self, filter="JSON(*.json)")
@@ -96,3 +173,13 @@ class MainWindow(QMainWindow):
         self.ui.nameListWidget.clear()
         self.ui.nameListWidget.addItems(names)
 
+    # 制作昵称到枪的反向对应
+    def make_name2guns(self):
+        self.name2guns.clear()
+        self.vote.clear()
+        self.truelove_vote.clear()
+        for gun in self.guns:
+            for name in self.guns[gun]:
+                self.name2guns[name] = gun
+            self.vote[gun] = 0
+            self.truelove_vote[gun] = 0

@@ -2,7 +2,7 @@
 
 # Form implementation generated from reading ui file 'MainWindow.ui'
 #
-# Created by: PyQt5 UI code generator 5.13.2
+# Created by: PyQt5 UI code generator 5.14.2
 #
 # WARNING! All changes made in this file will be lost!
 
@@ -13,7 +13,7 @@ from PyQt5 import QtCore, QtGui, QtWidgets
 class Ui_MainWindow(object):
     def setupUi(self, MainWindow):
         MainWindow.setObjectName("MainWindow")
-        MainWindow.resize(800, 600)
+        MainWindow.resize(986, 600)
         self.centralwidget = QtWidgets.QWidget(MainWindow)
         self.centralwidget.setObjectName("centralwidget")
         self.gridLayout = QtWidgets.QGridLayout(self.centralwidget)
@@ -83,9 +83,9 @@ class Ui_MainWindow(object):
         self.label = QtWidgets.QLabel(self.centralwidget)
         self.label.setObjectName("label")
         self.horizontalLayout_2.addWidget(self.label)
-        self.fidLineEdit = QtWidgets.QLineEdit(self.centralwidget)
-        self.fidLineEdit.setObjectName("fidLineEdit")
-        self.horizontalLayout_2.addWidget(self.fidLineEdit)
+        self.tidLineEdit = QtWidgets.QLineEdit(self.centralwidget)
+        self.tidLineEdit.setObjectName("tidLineEdit")
+        self.horizontalLayout_2.addWidget(self.tidLineEdit)
         self.label_2 = QtWidgets.QLabel(self.centralwidget)
         self.label_2.setObjectName("label_2")
         self.horizontalLayout_2.addWidget(self.label_2)
@@ -101,6 +101,12 @@ class Ui_MainWindow(object):
         self.scheduleLineEdit = QtWidgets.QLineEdit(self.centralwidget)
         self.scheduleLineEdit.setObjectName("scheduleLineEdit")
         self.horizontalLayout_2.addWidget(self.scheduleLineEdit)
+        self.label_6 = QtWidgets.QLabel(self.centralwidget)
+        self.label_6.setObjectName("label_6")
+        self.horizontalLayout_2.addWidget(self.label_6)
+        self.trueloveLineEdit = QtWidgets.QLineEdit(self.centralwidget)
+        self.trueloveLineEdit.setObjectName("trueloveLineEdit")
+        self.horizontalLayout_2.addWidget(self.trueloveLineEdit)
         self.loadSettingPushButton = QtWidgets.QPushButton(self.centralwidget)
         self.loadSettingPushButton.setObjectName("loadSettingPushButton")
         self.horizontalLayout_2.addWidget(self.loadSettingPushButton)
@@ -115,7 +121,7 @@ class Ui_MainWindow(object):
 
     def retranslateUi(self, MainWindow):
         _translate = QtCore.QCoreApplication.translate
-        MainWindow.setWindowTitle(_translate("MainWindow", "MainWindow"))
+        MainWindow.setWindowTitle(_translate("MainWindow", "NGA萌战计票工具"))
         self.groupBox.setTitle(_translate("MainWindow", "选手信息"))
         self.label_4.setText(_translate("MainWindow", "昵称"))
         self.label_3.setText(_translate("MainWindow", "名称"))
@@ -124,9 +130,10 @@ class Ui_MainWindow(object):
         self.addNamePushButton.setText(_translate("MainWindow", "增加"))
         self.delNamePushButton.setText(_translate("MainWindow", "删除"))
         self.groupBox_2.setTitle(_translate("MainWindow", "统计信息"))
-        self.label.setText(_translate("MainWindow", "帖子FID"))
+        self.label.setText(_translate("MainWindow", "帖子TID"))
         self.label_2.setText(_translate("MainWindow", "页数"))
         self.startPushButton.setText(_translate("MainWindow", "开始"))
         self.label_5.setText(_translate("MainWindow", "赛程"))
+        self.label_6.setText(_translate("MainWindow", "真爱倍率"))
         self.loadSettingPushButton.setText(_translate("MainWindow", "导入配置"))
         self.saveSettingPushButton.setText(_translate("MainWindow", "导出配置"))
