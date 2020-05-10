@@ -9,20 +9,28 @@ import re
 
 
 class MainWindow(QMainWindow):
+    # 名字到昵称的对应
     guns = dict()
+    # 昵称到名字的对应
     name2guns = dict()
     tid = 17315247
     pages = 1
     schedule = "1"
+    # 记录uid选择的真爱票，需要读完所有回复之后再记录
     truelove_info = dict()
+    # 普通投票数量
     vote = dict()
+    # 真爱票数量
     truelove_vote = dict()
+    # 记录uid，回复，对应的角色
+    comment_log = []
 
     def __init__(self):
         QMainWindow.__init__(self)
         self.ui = Ui_MainWindow()
         self.ui.setupUi(self)
         self.connect()
+        self.init_table()
 
     def connect(self):
         self.ui.startPushButton.clicked.connect(self.start)
@@ -34,14 +42,44 @@ class MainWindow(QMainWindow):
         self.ui.delNamePushButton.clicked.connect(self.del_name)
         self.ui.gunListWidget.currentTextChanged.connect(self.select_gun)
 
+    def init_table(self):
+        self.ui.voteTableWidget.clear()
+        self.ui.voteTableWidget.setColumnCount(4)
+        self.ui.voteTableWidget.setHorizontalHeaderLabels(['角色', '普通票', '真爱票', '总票数'])
+        self.ui.voteTableWidget.horizontalHeader().setSectionResizeMode(QHeaderView.Stretch)
+        self.ui.voteTableWidget.setEditTriggers(QAbstractItemView.NoEditTriggers)
+        self.ui.voteTableWidget.setSelectionBehavior(QAbstractItemView.SelectRows)
+        self.ui.voteTableWidget.setSortingEnabled(True)
+
     def start(self):
         self.tid = int(self.ui.tidLineEdit.text())
         self.pages = int(self.ui.pagesLineEdit.text())
         self.schedule = self.ui.scheduleLineEdit.text()
         self.make_name2guns()
         self.truelove_info.clear()
+        self.comment_log.clear()
         for p in range(1, self.pages + 1):
             self.process_page("https://bbs.nga.cn/read.php?tid=%d&page=%d" % (self.tid, p))
+        for uid in self.truelove_info:
+            gun = self.truelove_info[uid]
+            if gun in self.guns:
+                self.truelove_vote[gun] += 1
+        # 更新统计表
+        self.update_table()
+
+    def update_table(self):
+        truelove_rate = int(self.ui.trueloveLineEdit.text())
+        self.init_table()
+        row = 0
+        self.ui.voteTableWidget.setRowCount(len(self.guns))
+        for gun in self.guns:
+            self.ui.voteTableWidget.setItem(row, 0, QTableWidgetItem(gun))
+            vote = self.vote[gun]
+            self.ui.voteTableWidget.setItem(row, 1, QTableWidgetItem("%d" % vote))
+            truelove = self.truelove_vote[gun]
+            self.ui.voteTableWidget.setItem(row, 2, QTableWidgetItem("%d" % truelove))
+            self.ui.voteTableWidget.setItem(row, 3, QTableWidgetItem("%d" % (vote + truelove*truelove_rate)))
+            row += 1
 
     # 处理一页的信息
     def process_page(self, url):
@@ -62,9 +100,9 @@ class MainWindow(QMainWindow):
 
     # 处理主楼的投票数据
     def process_main_floor(self, script):
-        t = script.split(',', 2)
-        t = t[2].split('\'')
-        data = t[1].split('~')
+        t = str.split(script.string, ',', 2)
+        t = str.split(t[2], '\'')
+        data = str.split(t[1], '~')
         id_list = dict()
         for i in range(0, len(data), 2):
             if data[i].isnumeric():
@@ -76,7 +114,10 @@ class MainWindow(QMainWindow):
             else:
                 # 处理投票数量
                 vote = data[i + 1].split(',')[0]
-                self.vote[self.name2guns[id_list[data[i][1:]]]] = int(vote)
+                name = id_list[data[i][1:]]
+                if name not in self.name2guns:
+                    continue
+                self.vote[self.name2guns[name]] = int(vote)
 
     # 处理回复的真爱数据
     def process_comment(self, tds):
@@ -90,6 +131,7 @@ class MainWindow(QMainWindow):
             cmt = sp.get_text()
             pattern = re.compile(r'uid=([\d]+)')
             uid = pattern.findall(tds[0].find('span').find('a').get('href'))[0]
+            floor = tds[1].find_all('a')[1].get('name')
             for name in self.name2guns:
                 if str.find(cmt, name) >= 0:
                     found.add(self.name2guns[name])
@@ -97,12 +139,16 @@ class MainWindow(QMainWindow):
             if len(found) != 1:
                 # 弹窗选择
                 truelove = CheckDialog.pop(self, cmt)
+                if truelove in self.name2guns:
+                    truelove = self.name2guns[truelove]
             if (uid in self.truelove_info) and (self.truelove_info[uid] != truelove):
                 # 清空该uid所有的信息，并且空串以后也一直会进入该分支
-                self.truelove_info = ''
-                truelove = ''
-            if truelove in self.name2guns:
-                self.truelove_vote[truelove] += 1
+                self.truelove_info[uid] = ''
+            else:
+                # 记录uid选择的真爱票
+                self.truelove_info[uid] = truelove
+            # 记录log
+            self.comment_log.append([floor, uid, cmt, truelove])
 
     def load_setting(self):
         filename, _ = QFileDialog.getOpenFileName(self, filter="JSON(*.json)")

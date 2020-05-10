@@ -111,6 +111,11 @@
       <property name="title">
        <string>统计信息</string>
       </property>
+      <layout class="QGridLayout" name="gridLayout_5">
+       <item row="0" column="0">
+        <widget class="QTableWidget" name="voteTableWidget"/>
+       </item>
+      </layout>
      </widget>
     </item>
     <item row="1" column="0" colspan="2">
