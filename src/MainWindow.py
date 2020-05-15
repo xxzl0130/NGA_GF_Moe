@@ -6,6 +6,10 @@ from PyQt5.QtWidgets import *
 import json
 from bs4 import BeautifulSoup
 import re
+import os
+import time
+
+data_dir = './data'
 
 
 class MainWindow(QMainWindow):
@@ -31,6 +35,8 @@ class MainWindow(QMainWindow):
         self.ui.setupUi(self)
         self.connect()
         self.init_table()
+        if not os.path.exists(data_dir):
+            os.mkdir(data_dir)
 
     def connect(self):
         self.ui.startPushButton.clicked.connect(self.start)
@@ -66,20 +72,35 @@ class MainWindow(QMainWindow):
                 self.truelove_vote[gun] += 1
         # 更新统计表
         self.update_table()
+        self.export_cmt_log()
 
     def update_table(self):
         truelove_rate = int(self.ui.trueloveLineEdit.text())
         self.init_table()
         row = 0
         self.ui.voteTableWidget.setRowCount(len(self.guns))
+        fout = open(data_dir + '/' + self.ui.scheduleLineEdit.text() + '-统计-' + self.get_time() + '.csv', 'w',
+                    encoding='gbk')
+        fout.write('角色,普通票,真爱票,总票数\n')
         for gun in self.guns:
             self.ui.voteTableWidget.setItem(row, 0, QTableWidgetItem(gun))
             vote = self.vote[gun]
             self.ui.voteTableWidget.setItem(row, 1, QTableWidgetItem("%d" % vote))
             truelove = self.truelove_vote[gun]
             self.ui.voteTableWidget.setItem(row, 2, QTableWidgetItem("%d" % truelove))
-            self.ui.voteTableWidget.setItem(row, 3, QTableWidgetItem("%d" % (vote + truelove*truelove_rate)))
+            sum = vote + truelove * truelove_rate
+            self.ui.voteTableWidget.setItem(row, 3, QTableWidgetItem("%d" % sum))
+            fout.write("%s,%d,%d,%d\n" % (gun, vote, truelove, sum))
             row += 1
+        fout.close()
+
+    def export_cmt_log(self):
+        fout = open(data_dir + '/' + self.ui.scheduleLineEdit.text() + '-明细-' + self.get_time() + '.csv', 'w',
+                    encoding='gbk')
+        fout.write('楼层,UID,原始评论,真爱票\n')
+        for it in self.comment_log:
+            fout.write('%s,%s,%s,%s\n' % (it[0], it[1], str.replace(it[2], '\n', ''), it[3]))
+        fout.close()
 
     # 处理一页的信息
     def process_page(self, url):
@@ -92,6 +113,8 @@ class MainWindow(QMainWindow):
             cls = table.get('class')
             if cls[0] == 'forumbox':
                 tds = table.find_all('td')
+                if len(tds) < 2:
+                    return
                 script = tds[1].find('script')
                 if script:
                     self.process_main_floor(script)
@@ -101,8 +124,14 @@ class MainWindow(QMainWindow):
     # 处理主楼的投票数据
     def process_main_floor(self, script):
         t = str.split(script.string, ',', 2)
+        if len(t) < 2:
+            return
         t = str.split(t[2], '\'')
+        if len(t) <= 2:
+            return
         data = str.split(t[1], '~')
+        if len(data) <= 2:
+            return
         id_list = dict()
         for i in range(0, len(data), 2):
             if data[i].isnumeric():
@@ -128,7 +157,7 @@ class MainWindow(QMainWindow):
             return
         sp = spans[1].span
         if sp:
-            cmt = sp.get_text()
+            cmt = self.trim_symbols(sp.get_text().lower())  # 全部转小写处理
             pattern = re.compile(r'uid=([\d]+)')
             uid = pattern.findall(tds[0].find('span').find('a').get('href'))[0]
             floor = tds[1].find_all('a')[1].get('name')
@@ -183,13 +212,13 @@ class MainWindow(QMainWindow):
             fout.close()
 
     def add_gun(self):
-        gun = self.ui.gunLineEdit.text()
+        gun = self.ui.gunLineEdit.text().strip()  # strip去除空格
         if gun not in self.guns:
             self.guns[gun] = []
             self.ui.gunListWidget.addItem(gun)
             self.ui.gunListWidget.setCurrentRow(len(self.guns) - 1)
             self.ui.gunLineEdit.clear()
-            self.ui.nameLineEdit.setText(gun)
+            self.ui.nameLineEdit.setText(gun.lower())  # 昵称统一转小写
             self.add_name()
 
     def del_gun(self):
@@ -229,3 +258,15 @@ class MainWindow(QMainWindow):
                 self.name2guns[name] = gun
             self.vote[gun] = 0
             self.truelove_vote[gun] = 0
+
+    # 去除奇奇怪怪的符号
+    @staticmethod
+    def trim_symbols(text):
+        symbols = [',', '!', '！', '？', '?', '~', '～', '+', '_', '—']
+        for s in symbols:
+            str.replace(text, s, '')
+        return text
+
+    @staticmethod
+    def get_time():
+        return time.strftime("%Y-%m-%d-%H-%M-%S", time.localtime())
