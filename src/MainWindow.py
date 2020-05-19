@@ -63,6 +63,9 @@ class MainWindow(QMainWindow):
         self.ui.voteTableWidget.setSortingEnabled(True)
 
     def start(self):
+        if len(self.ui.tidLineEdit.text()) < 1 or len(self.ui.pagesLineEdit.text()) < 1 or len(self.ui.scheduleLineEdit.text()) < 1:
+            QMessageBox.warning(self, '错误', '缺少信息，请检查!')
+            return
         self.tid = int(self.ui.tidLineEdit.text())
         self.pages = int(self.ui.pagesLineEdit.text())
         self.schedule = self.ui.scheduleLineEdit.text()
@@ -155,7 +158,7 @@ class MainWindow(QMainWindow):
         for i in range(0, len(data), 2):
             if data[i].isnumeric():
                 # 登记数字编号与文本的对应
-                id_list[data[i]] = data[i + 1]
+                id_list[data[i]] = data[i + 1].lower()
             elif data[i].find('max_select') >= 0:
                 # 跳过max_select语句
                 i += 2
@@ -246,6 +249,8 @@ class MainWindow(QMainWindow):
 
     def add_gun(self):
         gun = self.ui.gunLineEdit.text().strip()  # strip去除空格
+        if len(gun) < 1:
+            return
         if gun not in self.guns:
             self.guns[gun] = []
             self.ui.gunListWidget.addItem(gun)
@@ -269,7 +274,9 @@ class MainWindow(QMainWindow):
         if self.ui.gunListWidget.currentRow() < 0:
             return
         gun = self.ui.gunListWidget.currentItem().text()
-        name = self.ui.nameLineEdit.text().lower()
+        name = self.ui.nameLineEdit.text().strip().lower()
+        if len(name) < 1:
+            return
         self.guns[gun].append(name)
         self.ui.nameListWidget.addItem(name)
         self.ui.nameLineEdit.clear()
