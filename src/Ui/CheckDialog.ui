@@ -7,7 +7,7 @@
     <x>0</x>
     <y>0</y>
     <width>400</width>
-    <height>300</height>
+    <height>340</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -37,6 +37,16 @@
    </item>
    <item>
     <widget class="QLineEdit" name="voteLineEdit"/>
+   </item>
+   <item>
+    <widget class="QLabel" name="label_3">
+     <property name="text">
+      <string>文中昵称，用于补充列表，可不填:</string>
+     </property>
+    </widget>
+   </item>
+   <item>
+    <widget class="QLineEdit" name="nameLineEdit"/>
    </item>
    <item>
     <widget class="QPushButton" name="confirmPushButton">

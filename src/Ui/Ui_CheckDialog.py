@@ -13,7 +13,7 @@ from PyQt5 import QtCore, QtGui, QtWidgets
 class Ui_CheckDialog(object):
     def setupUi(self, CheckDialog):
         CheckDialog.setObjectName("CheckDialog")
-        CheckDialog.resize(400, 300)
+        CheckDialog.resize(400, 340)
         self.verticalLayout = QtWidgets.QVBoxLayout(CheckDialog)
         self.verticalLayout.setObjectName("verticalLayout")
         self.label = QtWidgets.QLabel(CheckDialog)
@@ -29,6 +29,12 @@ class Ui_CheckDialog(object):
         self.voteLineEdit = QtWidgets.QLineEdit(CheckDialog)
         self.voteLineEdit.setObjectName("voteLineEdit")
         self.verticalLayout.addWidget(self.voteLineEdit)
+        self.label_3 = QtWidgets.QLabel(CheckDialog)
+        self.label_3.setObjectName("label_3")
+        self.verticalLayout.addWidget(self.label_3)
+        self.nameLineEdit = QtWidgets.QLineEdit(CheckDialog)
+        self.nameLineEdit.setObjectName("nameLineEdit")
+        self.verticalLayout.addWidget(self.nameLineEdit)
         self.confirmPushButton = QtWidgets.QPushButton(CheckDialog)
         self.confirmPushButton.setObjectName("confirmPushButton")
         self.verticalLayout.addWidget(self.confirmPushButton)
@@ -41,4 +47,5 @@ class Ui_CheckDialog(object):
         CheckDialog.setWindowTitle(_translate("CheckDialog", "人工复核"))
         self.label.setText(_translate("CheckDialog", "原始评论："))
         self.label_2.setText(_translate("CheckDialog", "投票对象，留空则无:"))
+        self.label_3.setText(_translate("CheckDialog", "文中昵称，用于补充列表，可不填:"))
         self.confirmPushButton.setText(_translate("CheckDialog", "确定"))

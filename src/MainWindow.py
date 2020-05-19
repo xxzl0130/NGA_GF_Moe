@@ -10,6 +10,7 @@ import os
 import time
 
 data_dir = './data'
+duplicate_str = '!@#err!duplicate!err!!@#'  # 标记重复投票的字符串
 
 
 class MainWindow(QMainWindow):
@@ -28,6 +29,10 @@ class MainWindow(QMainWindow):
     truelove_vote = dict()
     # 记录uid，回复，对应的角色
     comment_log = []
+    # 记录最大楼层号
+    max_floor = 0
+    # 记录楼层序号
+    floors = []
 
     def __init__(self):
         QMainWindow.__init__(self)
@@ -61,9 +66,7 @@ class MainWindow(QMainWindow):
         self.tid = int(self.ui.tidLineEdit.text())
         self.pages = int(self.ui.pagesLineEdit.text())
         self.schedule = self.ui.scheduleLineEdit.text()
-        self.make_name2guns()
-        self.truelove_info.clear()
-        self.comment_log.clear()
+        self.init()
         for p in range(1, self.pages + 1):
             self.process_page("https://bbs.nga.cn/read.php?tid=%d&page=%d" % (self.tid, p))
         for uid in self.truelove_info:
@@ -73,13 +76,14 @@ class MainWindow(QMainWindow):
         # 更新统计表
         self.update_table()
         self.export_cmt_log()
+        self.export_floor_info()
 
     def update_table(self):
         truelove_rate = int(self.ui.trueloveLineEdit.text())
         self.init_table()
         row = 0
         self.ui.voteTableWidget.setRowCount(len(self.guns))
-        fout = open(data_dir + '/' + self.ui.scheduleLineEdit.text() + '-统计-' + self.get_time() + '.csv', 'w',
+        fout = open(data_dir + '/' + self.ui.scheduleLineEdit.text() + '-' + self.get_time() + '-统计' + '.csv', 'w',
                     encoding='gbk')
         fout.write('角色,普通票,真爱票,总票数\n')
         for gun in self.guns:
@@ -95,11 +99,26 @@ class MainWindow(QMainWindow):
         fout.close()
 
     def export_cmt_log(self):
-        fout = open(data_dir + '/' + self.ui.scheduleLineEdit.text() + '-明细-' + self.get_time() + '.csv', 'w',
+        fout = open(data_dir + '/' + self.ui.scheduleLineEdit.text() + '-' + self.get_time() + '-明细' + '.csv', 'w',
                     encoding='gbk')
         fout.write('楼层,UID,原始评论,真爱票\n')
         for it in self.comment_log:
             fout.write('%s,%s,%s,%s\n' % (it[0], it[1], str.replace(it[2], '\n', ''), it[3]))
+        fout.close()
+        fout = open(data_dir + '/' + self.ui.scheduleLineEdit.text() + '-' + self.get_time() + '-重复' + '.txt', 'w',
+                    encoding='gbk')
+        for uid in self.truelove_info:
+            if self.truelove_info[uid] == duplicate_str:
+                fout.write(uid + '\n')
+        fout.close()
+
+    # 输出缺少的楼层
+    def export_floor_info(self):
+        fout = open(data_dir + '/' + self.ui.scheduleLineEdit.text() + '-' + self.get_time() + '-缺楼' + '.txt', 'w',
+                    encoding='gbk')
+        for i in range(1, self.max_floor):
+            if i not in self.floors:
+                fout.write("%d\n" % i)
         fout.close()
 
     # 处理一页的信息
@@ -160,19 +179,30 @@ class MainWindow(QMainWindow):
             cmt = self.trim_symbols(sp.get_text().lower())  # 全部转小写处理
             pattern = re.compile(r'uid=([\d]+)')
             uid = pattern.findall(tds[0].find('span').find('a').get('href'))[0]
-            floor = tds[1].find_all('a')[1].get('name')
+            floor = int(tds[1].find_all('a')[1].get('name').replace('l', ''))
+            self.floors.append(floor)
+            if floor > self.max_floor:
+                self.max_floor = floor
             for name in self.name2guns:
                 if str.find(cmt, name) >= 0:
                     found.add(self.name2guns[name])
                     truelove = self.name2guns[name]
             if len(found) != 1:
                 # 弹窗选择
-                truelove = CheckDialog.pop(self, cmt)
+                truelove, name = CheckDialog.pop(self, cmt)
                 if truelove in self.name2guns:
                     truelove = self.name2guns[truelove]
+                    name = name.strip()
+                    if len(name) > 1:
+                        # 把名字加到列表
+                        self.ui.gunLineEdit.setText(truelove)
+                        self.add_gun()
+                        self.ui.nameLineEdit.setText(name)
+                        self.add_name()
+
             if (uid in self.truelove_info) and (self.truelove_info[uid] != truelove):
-                # 清空该uid所有的信息，并且空串以后也一直会进入该分支
-                self.truelove_info[uid] = ''
+                # 清空该uid所有的信息并记为重复，并且该串会使其以后也一直会进入该分支
+                self.truelove_info[uid] = duplicate_str
             else:
                 # 记录uid选择的真爱票
                 self.truelove_info[uid] = truelove
@@ -181,7 +211,10 @@ class MainWindow(QMainWindow):
 
     def load_setting(self):
         filename, _ = QFileDialog.getOpenFileName(self, filter="JSON(*.json)")
+        if len(filename) < 1:
+            return
         with open(filename, 'r', encoding='gbk') as fin:
+            self.clear()
             settings = json.load(fin, encoding='gbk')
             self.ui.tidLineEdit.setText(settings['tid'])
             self.ui.pagesLineEdit.setText(settings['pages'])
@@ -220,6 +253,12 @@ class MainWindow(QMainWindow):
             self.ui.gunLineEdit.clear()
             self.ui.nameLineEdit.setText(gun.lower())  # 昵称统一转小写
             self.add_name()
+        else:
+            for i in range(len(self.guns)):
+                if self.ui.gunListWidget.item(i).text() == gun:
+                    self.ui.gunListWidget.setCurrentRow(i)
+                    self.ui.gunLineEdit.clear()
+                    break
 
     def del_gun(self):
         gun = self.ui.gunListWidget.currentItem().text()
@@ -230,7 +269,7 @@ class MainWindow(QMainWindow):
         if self.ui.gunListWidget.currentRow() < 0:
             return
         gun = self.ui.gunListWidget.currentItem().text()
-        name = self.ui.nameLineEdit.text()
+        name = self.ui.nameLineEdit.text().lower()
         self.guns[gun].append(name)
         self.ui.nameListWidget.addItem(name)
         self.ui.nameLineEdit.clear()
@@ -251,13 +290,40 @@ class MainWindow(QMainWindow):
     # 制作昵称到枪的反向对应
     def make_name2guns(self):
         self.name2guns.clear()
-        self.vote.clear()
-        self.truelove_vote.clear()
         for gun in self.guns:
             for name in self.guns[gun]:
                 self.name2guns[name] = gun
             self.vote[gun] = 0
             self.truelove_vote[gun] = 0
+
+    # 清除所有信息
+    def clear(self):
+        self.floors.clear()
+        self.max_floor = 0
+        self.truelove_info.clear()
+        self.comment_log.clear()
+        self.name2guns.clear()
+        self.guns.clear()
+        self.vote.clear()
+        self.truelove_vote.clear()
+        self.pages = 0
+        self.schedule = ''
+        self.tid = 0
+        self.init_table()
+        self.ui.gunListWidget.clear()
+        self.ui.nameListWidget.clear()
+        self.ui.gunLineEdit.clear()
+        self.ui.nameLineEdit.clear()
+
+    # 统计前的初始化
+    def init(self):
+        self.floors.clear()
+        self.max_floor = 0
+        self.truelove_info.clear()
+        self.comment_log.clear()
+        self.vote.clear()
+        self.truelove_vote.clear()
+        self.make_name2guns()
 
     # 去除奇奇怪怪的符号
     @staticmethod
