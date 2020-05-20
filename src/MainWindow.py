@@ -159,15 +159,19 @@ class MainWindow(QMainWindow):
             if data[i].isnumeric():
                 # 登记数字编号与文本的对应
                 id_list[data[i]] = data[i + 1].lower()
-            elif data[i].find('max_select') >= 0:
+            elif data[i].find('max_select') >= 0 or data[i].find('end') >= 0:
                 # 跳过max_select语句
-                i += 2
+                continue
             else:
                 # 处理投票数量
                 vote = data[i + 1].split(',')[0]
+                if data[i][1:] not in id_list:
+                    continue
                 name = id_list[data[i][1:]]
                 if name not in self.name2guns:
-                    continue
+                    self.ui.gunLineEdit.setText(name)
+                    self.add_gun()
+                    self.make_name2guns()
                 self.vote[self.name2guns[name]] = int(vote)
 
     # 处理回复的真爱数据
