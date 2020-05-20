@@ -33,6 +33,8 @@ class MainWindow(QMainWindow):
     max_floor = 0
     # 记录楼层序号
     floors = []
+    # 记录主楼是否已被处理
+    main_floor = False
 
     def __init__(self):
         QMainWindow.__init__(self)
@@ -138,8 +140,9 @@ class MainWindow(QMainWindow):
                 if len(tds) < 2:
                     return
                 script = tds[1].find('script')
-                if script:
+                if script and not self.main_floor:
                     self.process_main_floor(script)
+                    self.main_floor = True
                 else:
                     self.process_comment(tds)
 
@@ -320,6 +323,7 @@ class MainWindow(QMainWindow):
         self.pages = 0
         self.schedule = ''
         self.tid = 0
+        self.main_floor = False
         self.init_table()
         self.ui.gunListWidget.clear()
         self.ui.nameListWidget.clear()
@@ -330,6 +334,7 @@ class MainWindow(QMainWindow):
     def init(self):
         self.floors.clear()
         self.max_floor = 0
+        self.main_floor = False
         self.truelove_info.clear()
         self.comment_log.clear()
         self.vote.clear()
