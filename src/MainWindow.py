@@ -35,6 +35,10 @@ class MainWindow(QMainWindow):
     floors = []
     # 记录主楼是否已被处理
     main_floor = False
+    # 重复的记录
+    duplicate_info = dict()
+    # 匿名的记录
+    anony_list = []
 
     def __init__(self):
         QMainWindow.__init__(self)
@@ -108,13 +112,22 @@ class MainWindow(QMainWindow):
                     encoding='gbk')
         fout.write('楼层,UID,原始评论,真爱票\n')
         for it in self.comment_log:
-            fout.write('%s,%s,%s,%s\n' % (it[0], it[1], str.replace(it[2], '\n', ''), it[3]))
+            fout.write('%s,%s,%s,%s\n' % (it[0], it[1], [it[2]], it[3]))
         fout.close()
-        fout = open(data_dir + '/' + self.ui.scheduleLineEdit.text() + '-' + self.get_time() + '-重复' + '.txt', 'w',
+        fout = open(data_dir + '/' + self.ui.scheduleLineEdit.text() + '-' + self.get_time() + '-重复' + '.csv', 'w',
                     encoding='gbk')
-        for uid in self.truelove_info:
-            if self.truelove_info[uid] == duplicate_str:
-                fout.write(uid + '\n')
+        fout.write("UID,楼层\n")
+        for uid in self.duplicate_info:
+            fout.write("%s," % uid)
+            floors = self.duplicate_info[uid]
+            for floor in floors:
+                fout.write("%s," % floor)
+            fout.write("\n")
+        fout.close()
+        fout = open(data_dir + '/' + self.ui.scheduleLineEdit.text() + '-' + self.get_time() + '-匿名' + '.txt', 'w',
+                    encoding='gbk')
+        for i in self.anony_list:
+            fout.write("%s\n" % i)
         fout.close()
 
     # 输出缺少的楼层
@@ -187,7 +200,7 @@ class MainWindow(QMainWindow):
         sp = spans[1].span
         if sp:
             cmt = self.trim_symbols(sp.get_text().lower())  # 全部转小写处理
-            pattern = re.compile(r'uid=([\d]+)')
+            pattern = re.compile(r'uid=([\-\d]+)')
             uid = pattern.findall(tds[0].find('span').find('a').get('href'))[0]
             floor = int(tds[1].find_all('a')[1].get('name').replace('l', ''))
             self.floors.append(floor)
@@ -209,10 +222,17 @@ class MainWindow(QMainWindow):
                         self.add_gun()
                         self.ui.nameLineEdit.setText(name)
                         self.add_name()
-
+            if int(uid) < 0:
+                # 记录匿名贴楼层
+                self.anony_list.append(floor)
             if (uid in self.truelove_info) and (self.truelove_info[uid] != truelove):
                 # 清空该uid所有的信息并记为重复，并且该串会使其以后也一直会进入该分支
                 self.truelove_info[uid] = duplicate_str
+                # 记录重复贴信息
+                if uid in self.duplicate_info:
+                    self.duplicate_info[uid].append(floor)
+                else:
+                    self.duplicate_info[uid] = [floor]
             else:
                 # 记录uid选择的真爱票
                 self.truelove_info[uid] = truelove
@@ -329,6 +349,8 @@ class MainWindow(QMainWindow):
         self.ui.nameListWidget.clear()
         self.ui.gunLineEdit.clear()
         self.ui.nameLineEdit.clear()
+        self.anony_list.clear()
+        self.duplicate_info.clear()
 
     # 统计前的初始化
     def init(self):
@@ -340,6 +362,8 @@ class MainWindow(QMainWindow):
         self.vote.clear()
         self.truelove_vote.clear()
         self.make_name2guns()
+        self.anony_list.clear()
+        self.duplicate_info.clear()
 
     # 去除奇奇怪怪的符号
     @staticmethod
