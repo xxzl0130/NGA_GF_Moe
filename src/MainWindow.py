@@ -48,6 +48,9 @@ class MainWindow(QMainWindow):
         QMainWindow.__init__(self)
         self.ui = Ui_MainWindow()
         self.ui.setupUi(self)
+        self.progress_bar = QProgressBar(self)
+        self.ui.statusBar.addWidget(self.progress_bar)
+        self.progress_bar.setFormat('%v/%m页')
         self.connect()
         self.init_table()
         if not os.path.exists(data_dir):
@@ -80,8 +83,11 @@ class MainWindow(QMainWindow):
         self.pages = int(self.ui.pagesLineEdit.text())
         self.schedule = self.ui.scheduleLineEdit.text()
         self.init()
+        self.progress_bar.setMaximum(self.pages)
+        self.progress_bar.setValue(0)
         for p in range(1, self.pages + 1):
             self.process_page("https://bbs.nga.cn/read.php?tid=%d&page=%d" % (self.tid, p))
+            self.progress_bar.setValue(p)
         for uid in self.truelove_info:
             gun = self.truelove_info[uid]
             if gun in self.guns:
@@ -121,6 +127,9 @@ class MainWindow(QMainWindow):
         fout = open(self.path + '/重复.csv', 'w', encoding='gbk')
         fout.write("UID,楼层\n")
         for uid in self.duplicate_info:
+            if len(self.duplicate_info[uid]) < 2:
+                # 只有一条不用输出
+                continue
             fout.write("%s," % uid)
             floors = self.duplicate_info[uid]
             for floor in floors:
@@ -131,7 +140,7 @@ class MainWindow(QMainWindow):
         for i in self.anony_list:
             fout.write("%s\n" % i)
         fout.close()
-    # 输出缺少的楼层
+        # 输出缺少的楼层
         fout = open(self.path + '/缺楼.txt', 'w', encoding='gbk')
         for i in range(1, self.max_floor):
             if i not in self.floors:
@@ -201,7 +210,8 @@ class MainWindow(QMainWindow):
             return
         sp = spans[1].span
         if sp:
-            cmt = self.trim_symbols(sp.get_text().lower())  # 全部转小写处理
+            raw_cmt = self.trim_symbols(sp.get_text().lower())  # 全部转小写处理
+            cmt = self.trim_others(raw_cmt)
             pattern = re.compile(r'uid=([\-\d]+)')
             uid = pattern.findall(tds[0].find('span').find('a').get('href'))[0]
             floor = int(tds[1].find_all('a')[1].get('name').replace('l', ''))
@@ -229,19 +239,18 @@ class MainWindow(QMainWindow):
             if int(uid) < 0:
                 # 记录匿名贴楼层
                 self.anony_list.append(floor)
-            if (uid in self.truelove_info) and (self.truelove_info[uid] != truelove):
+            # 记录重复贴信息
+            if uid in self.duplicate_info:
+                self.duplicate_info[uid].append(floor)
+            else:
+                self.duplicate_info[uid] = [floor]
+            if len(self.duplicate_info[uid]) > 1:
                 # 清空该uid所有的信息并记为重复，并且该串会使其以后也一直会进入该分支
                 self.truelove_info[uid] = duplicate_str
-                # 记录重复贴信息
-                if uid in self.duplicate_info:
-                    self.duplicate_info[uid].append(floor)
-                else:
-                    self.duplicate_info[uid] = [floor]
-            else:
-                # 记录uid选择的真爱票
-                self.truelove_info[uid] = truelove
+                truelove = '重复投票'
+            self.truelove_info[uid] = truelove
             # 记录log
-            self.comment_log.append([floor, uid, cmt, truelove])
+            self.comment_log.append([floor, uid, raw_cmt, truelove])
 
     def load_setting(self):
         filename, _ = QFileDialog.getOpenFileName(self, filter="JSON(*.json)")
@@ -383,6 +392,20 @@ class MainWindow(QMainWindow):
         symbols = [',', '!', '！', '？', '?', '~', '～', '+', '_', '—']
         for s in symbols:
             text = str.replace(text, s, '')
+        return text
+
+    # 去除奇奇怪怪的论坛标签
+    @staticmethod
+    def trim_others(text):
+        text = re.sub(r'\[img\]([\w:/\.\-])+\[/img\]', '', text)
+        text = re.sub(r'\[b\]Reply to([\s\S])+\[/b\]', '', text)
+        text = re.sub(r'\[quote\]([\s\S])+\[/quote\]', '', text)
+        text = re.sub(r'\[collapse=([\s\S]*)\]([\s\S]*)\[/collapse\]', r'\1 \2', text)
+        text = re.sub(r'\[collapse\]([\s\S]*)\[/collapse\]', r'\1', text)
+        text = re.sub(r'\[del\]|\[/del\]', '', text)
+        text = re.sub(r'\[url\][\S]+\[/url\]', '', text)
+        text = re.sub(r'\[url=[\S]*\]([\S])*\[/url\]', r'\1', text)
+        text = re.sub(r'[\s]{2,}', ' ', text)
         return text
 
     @staticmethod

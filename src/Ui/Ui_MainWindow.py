@@ -122,6 +122,9 @@ class Ui_MainWindow(object):
         self.horizontalLayout_2.addWidget(self.saveSettingPushButton)
         self.gridLayout.addLayout(self.horizontalLayout_2, 1, 0, 1, 2)
         MainWindow.setCentralWidget(self.centralwidget)
+        self.statusBar = QtWidgets.QStatusBar(MainWindow)
+        self.statusBar.setObjectName("statusBar")
+        MainWindow.setStatusBar(self.statusBar)
 
         self.retranslateUi(MainWindow)
         QtCore.QMetaObject.connectSlotsByName(MainWindow)
