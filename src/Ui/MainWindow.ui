@@ -144,13 +144,6 @@
        <widget class="QLineEdit" name="pagesLineEdit"/>
       </item>
       <item>
-       <widget class="QPushButton" name="startPushButton">
-        <property name="text">
-         <string>开始</string>
-        </property>
-       </widget>
-      </item>
-      <item>
        <widget class="QLabel" name="label_5">
         <property name="text">
          <string>赛程</string>
@@ -169,6 +162,13 @@
       </item>
       <item>
        <widget class="QLineEdit" name="trueloveLineEdit"/>
+      </item>
+      <item>
+       <widget class="QPushButton" name="startPushButton">
+        <property name="text">
+         <string>开始</string>
+        </property>
+       </widget>
       </item>
       <item>
        <widget class="QPushButton" name="loadSettingPushButton">
