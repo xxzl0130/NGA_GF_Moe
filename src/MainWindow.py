@@ -236,6 +236,7 @@ class MainWindow(QMainWindow):
                         self.add_gun()
                         self.ui.nameLineEdit.setText(name)
                         self.add_name()
+                        self.make_name2guns()
             if int(uid) < 0:
                 # 记录匿名贴楼层
                 self.anony_list.append(floor)
