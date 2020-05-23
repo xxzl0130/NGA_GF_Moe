@@ -382,7 +382,7 @@ class MainWindow(QMainWindow):
     def trim_symbols(text):
         symbols = [',', '!', '！', '？', '?', '~', '～', '+', '_', '—']
         for s in symbols:
-            str.replace(text, s, '')
+            text = str.replace(text, s, '')
         return text
 
     @staticmethod
