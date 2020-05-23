@@ -18,6 +18,8 @@ class MainWindow(QMainWindow):
     guns = dict()
     # 昵称到名字的对应
     name2guns = dict()
+    # 名字列表
+    names = []
     tid = 17315247
     pages = 1
     schedule = "1"
@@ -39,6 +41,8 @@ class MainWindow(QMainWindow):
     duplicate_info = dict()
     # 匿名的记录
     anony_list = []
+    # 路径
+    path = ''
 
     def __init__(self):
         QMainWindow.__init__(self)
@@ -83,17 +87,18 @@ class MainWindow(QMainWindow):
             if gun in self.guns:
                 self.truelove_vote[gun] += 1
         # 更新统计表
+        self.path = data_dir + '/' + self.ui.scheduleLineEdit.text() + '-' + self.get_time()
+        if not os.path.exists(self.path):
+            os.mkdir(self.path)
         self.update_table()
-        self.export_cmt_log()
-        self.export_floor_info()
+        self.export_data()
 
     def update_table(self):
         truelove_rate = int(self.ui.trueloveLineEdit.text())
         self.init_table()
         row = 0
         self.ui.voteTableWidget.setRowCount(len(self.guns))
-        fout = open(data_dir + '/' + self.ui.scheduleLineEdit.text() + '-' + self.get_time() + '-统计' + '.csv', 'w',
-                    encoding='gbk')
+        fout = open(self.path + '/统计.csv', 'w', encoding='gbk')
         fout.write('角色,普通票,真爱票,总票数\n')
         for gun in self.guns:
             self.ui.voteTableWidget.setItem(row, 0, QTableWidgetItem(gun))
@@ -107,15 +112,13 @@ class MainWindow(QMainWindow):
             row += 1
         fout.close()
 
-    def export_cmt_log(self):
-        fout = open(data_dir + '/' + self.ui.scheduleLineEdit.text() + '-' + self.get_time() + '-明细' + '.csv', 'w',
-                    encoding='gbk')
+    def export_data(self):
+        fout = open(self.path + '/明细.csv', 'w', encoding='gbk')
         fout.write('楼层,UID,原始评论,真爱票\n')
         for it in self.comment_log:
             fout.write('%s,%s,%s,%s\n' % (it[0], it[1], [it[2]], it[3]))
         fout.close()
-        fout = open(data_dir + '/' + self.ui.scheduleLineEdit.text() + '-' + self.get_time() + '-重复' + '.csv', 'w',
-                    encoding='gbk')
+        fout = open(self.path + '/重复.csv', 'w', encoding='gbk')
         fout.write("UID,楼层\n")
         for uid in self.duplicate_info:
             fout.write("%s," % uid)
@@ -124,16 +127,12 @@ class MainWindow(QMainWindow):
                 fout.write("%s," % floor)
             fout.write("\n")
         fout.close()
-        fout = open(data_dir + '/' + self.ui.scheduleLineEdit.text() + '-' + self.get_time() + '-匿名' + '.txt', 'w',
-                    encoding='gbk')
+        fout = open(self.path + '/匿名.txt', 'w', encoding='gbk')
         for i in self.anony_list:
             fout.write("%s\n" % i)
         fout.close()
-
     # 输出缺少的楼层
-    def export_floor_info(self):
-        fout = open(data_dir + '/' + self.ui.scheduleLineEdit.text() + '-' + self.get_time() + '-缺楼' + '.txt', 'w',
-                    encoding='gbk')
+        fout = open(self.path + '/缺楼.txt', 'w', encoding='gbk')
         for i in range(1, self.max_floor):
             if i not in self.floors:
                 fout.write("%d\n" % i)
@@ -184,11 +183,14 @@ class MainWindow(QMainWindow):
                 if data[i][1:] not in id_list:
                     continue
                 name = id_list[data[i][1:]]
-                if name not in self.name2guns:
-                    self.ui.gunLineEdit.setText(name)
-                    self.add_gun()
-                    self.make_name2guns()
-                self.vote[self.name2guns[name]] = int(vote)
+                if name in self.guns:
+                    self.vote[name] = int(vote)
+                else:
+                    if name not in self.name2guns:
+                        self.ui.gunLineEdit.setText(name)
+                        self.add_gun()
+                        self.make_name2guns()
+                    self.vote[self.name2guns[name]] = int(vote)
 
     # 处理回复的真爱数据
     def process_comment(self, tds):
@@ -206,10 +208,12 @@ class MainWindow(QMainWindow):
             self.floors.append(floor)
             if floor > self.max_floor:
                 self.max_floor = floor
-            for name in self.name2guns:
-                if str.find(cmt, name) >= 0:
+            cmt_t = cmt  # 拷贝
+            for name in self.names:
+                if str.find(cmt_t, name) >= 0:
                     found.add(self.name2guns[name])
                     truelove = self.name2guns[name]
+                    cmt_t = cmt_t.replace(name, '')
             if len(found) != 1:
                 # 弹窗选择
                 truelove, name = CheckDialog.pop(self, cmt)
@@ -324,11 +328,15 @@ class MainWindow(QMainWindow):
     # 制作昵称到枪的反向对应
     def make_name2guns(self):
         self.name2guns.clear()
+        self.names.clear()
         for gun in self.guns:
             for name in self.guns[gun]:
                 self.name2guns[name] = gun
+                self.names.append(name)
             self.vote[gun] = 0
             self.truelove_vote[gun] = 0
+        # 按长度排序
+        self.names.sort(key=len, reverse=True)
 
     # 清除所有信息
     def clear(self):
@@ -351,6 +359,8 @@ class MainWindow(QMainWindow):
         self.ui.nameLineEdit.clear()
         self.anony_list.clear()
         self.duplicate_info.clear()
+        self.names.clear()
+        self.path = ''
 
     # 统计前的初始化
     def init(self):
@@ -361,9 +371,11 @@ class MainWindow(QMainWindow):
         self.comment_log.clear()
         self.vote.clear()
         self.truelove_vote.clear()
-        self.make_name2guns()
+        self.names.clear()
         self.anony_list.clear()
         self.duplicate_info.clear()
+        self.make_name2guns()
+        self.path = ''
 
     # 去除奇奇怪怪的符号
     @staticmethod
