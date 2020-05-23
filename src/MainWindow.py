@@ -403,7 +403,7 @@ class MainWindow(QMainWindow):
         text = re.sub(r'\[quote\]([\s\S])+\[/quote\]', '', text)
         text = re.sub(r'\[collapse=([\s\S]*)\]([\s\S]*)\[/collapse\]', r'\1 \2', text)
         text = re.sub(r'\[collapse\]([\s\S]*)\[/collapse\]', r'\1', text)
-        text = re.sub(r'\[del\]|\[/del\]', '', text)
+        #text = re.sub(r'\[del\]|\[/del\]', '', text)
         text = re.sub(r'\[url\][\S]+\[/url\]', '', text)
         text = re.sub(r'\[url=[\S]*\]([\S])*\[/url\]', r'\1', text)
         text = re.sub(r'[\s]{2,}', ' ', text)
