@@ -191,14 +191,14 @@ class MainWindow(QMainWindow):
                 vote = data[i + 1].split(',')[0]
                 if data[i][1:] not in id_list:
                     continue
-                name = id_list[data[i][1:]]
+                name = id_list[data[i][1:]].lower()
                 if name in self.guns:
                     self.vote[name] = int(vote)
                 else:
                     if name not in self.name2guns:
                         self.ui.gunLineEdit.setText(name)
                         self.add_gun()
-                        self.make_name2guns()
+                        self.name2guns[name] = name
                     self.vote[self.name2guns[name]] = int(vote)
 
     # 处理回复的真爱数据
@@ -294,6 +294,8 @@ class MainWindow(QMainWindow):
             return
         if gun not in self.guns:
             self.guns[gun] = []
+            self.vote[gun] = 0
+            self.truelove_vote[gun] = 0
             self.ui.gunListWidget.addItem(gun)
             self.ui.gunListWidget.setCurrentRow(len(self.guns) - 1)
             self.ui.gunLineEdit.clear()
@@ -343,7 +345,9 @@ class MainWindow(QMainWindow):
             for name in self.guns[gun]:
                 self.name2guns[name] = gun
                 self.names.append(name)
+            #if gun not in self.vote:
             self.vote[gun] = 0
+            #if gun not in self.truelove_vote:
             self.truelove_vote[gun] = 0
         # 按长度排序
         self.names.sort(key=len, reverse=True)
