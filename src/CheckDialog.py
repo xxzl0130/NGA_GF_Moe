@@ -15,4 +15,4 @@ class CheckDialog(QDialog):
         dialog = CheckDialog(parent)
         dialog.ui.cmtTextEdit.setPlainText(cmt)
         dialog.exec()
-        return dialog.ui.voteLineEdit.text(), dialog.ui.nameLineEdit.text()
+        return dialog.ui.voteLineEdit.text().lower(), dialog.ui.nameLineEdit.text().lower()

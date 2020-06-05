@@ -198,7 +198,7 @@ class MainWindow(QMainWindow):
                     if name not in self.name2guns:
                         self.ui.gunLineEdit.setText(name)
                         self.add_gun()
-                        self.name2guns[name] = name
+                        self.make_name2guns()
                     self.vote[self.name2guns[name]] = int(vote)
 
     # 处理回复的真爱数据
@@ -210,7 +210,8 @@ class MainWindow(QMainWindow):
             return
         sp = spans[1].span
         if sp:
-            raw_cmt = self.trim_symbols(sp.get_text().lower())  # 全部转小写处理
+            h3 = self.trim_symbols(spans[1].find('h3').get_text()) + ';'
+            raw_cmt = h3 + self.trim_symbols(sp.get_text().lower())  # 全部转小写处理
             cmt = self.trim_others(raw_cmt)
             pattern = re.compile(r'uid=([\-\d]+)')
             uid = pattern.findall(tds[0].find('span').find('a').get('href'))[0]
@@ -345,10 +346,10 @@ class MainWindow(QMainWindow):
             for name in self.guns[gun]:
                 self.name2guns[name] = gun
                 self.names.append(name)
-            #if gun not in self.vote:
-            self.vote[gun] = 0
-            #if gun not in self.truelove_vote:
-            self.truelove_vote[gun] = 0
+            if gun not in self.vote:
+                self.vote[gun] = 0
+            if gun not in self.truelove_vote:
+                self.truelove_vote[gun] = 0
         # 按长度排序
         self.names.sort(key=len, reverse=True)
 
