@@ -285,6 +285,8 @@ class MainWindow(QMainWindow):
         }
         data = json.dumps(settings, ensure_ascii=False)
         filename, _ = QFileDialog.getSaveFileName(self, filter="JSON(*.json)")
+        if len(filename) < 1:
+            return
         with open(filename, 'w', encoding='gbk') as fout:
             fout.write(data)
             fout.close()
