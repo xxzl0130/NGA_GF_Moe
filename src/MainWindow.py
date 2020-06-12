@@ -170,7 +170,7 @@ class MainWindow(QMainWindow):
     # 处理主楼的投票数据
     def process_main_floor(self, script):
         t = str.split(script.string, ',', 2)
-        if len(t) < 2:
+        if len(t) <= 2:
             return
         t = str.split(t[2], '\'')
         if len(t) <= 2:
