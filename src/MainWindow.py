@@ -5,6 +5,7 @@ from src.CheckDialog import *
 from PyQt5.QtWidgets import *
 import json
 from bs4 import BeautifulSoup
+import bs4
 import re
 import os
 import time
@@ -210,8 +211,16 @@ class MainWindow(QMainWindow):
             return
         sp = spans[1].span
         if sp:
-            h3 = self.trim_symbols(spans[1].find('h3').get_text()) + ';'
-            raw_cmt = h3 + self.trim_symbols(sp.get_text().lower())  # 全部转小写处理
+            h3 = self.trim_symbols(spans[1].find('h3').get_text()).lower()
+            raw_cmt = ""  # 全部转小写处理
+            content = sp.contents
+            for it in content:
+                if type(it) == bs4.element.NavigableString:
+                    raw_cmt += self.trim_symbols(it).lower()
+                else:
+                    raw_cmt += '\n'
+            if len(h3) > 0:
+                raw_cmt = h3 + '\n' + raw_cmt
             cmt = self.trim_others(raw_cmt)
             pattern = re.compile(r'uid=([\-\d]+)')
             uid = pattern.findall(tds[0].find('span').find('a').get('href'))[0]
